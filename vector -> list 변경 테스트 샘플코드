@@ -1,0 +1,68 @@
+SP_Check_Multiple() { 
+    uint16_t cal_SP_Flag = 1;
+	constexpr uint16_t DwellSampleDiffCnt = 32; 
+	constexpr uint16_t DwellSampleCnt = DwellSampleDiffCnt + 1;
+
+        if (m_vSamplesDBm.empty())
+        m_vSamplesDBm.insert(m_vSamplesDBm.begin(), this->m_dBm);
+    else if (m_vSamplesDBm.size() < DwellSampleCnt)
+        m_vSamplesDBm.insert(m_vSamplesDBm.begin(), this->m_dBm);
+    else {
+        m_vSamplesDBm.erase(m_vSamplesDBm.end() - 1);
+                m_vSamplesDBm.insert(m_vSamplesDBm.begin(), this->m_dBm)
+    }
+        m_vSamplesDiff.assign(DwellSampleDiffCnt,0); 
+
+	if (m_vDiffVal.empty())
+		m_vDiffVal.insert(m_vDiffVal.begin(), DwellSampleDiffCnt, 0);
+    else{
+		m_vDiffVal.erase(m_vDiffVal.end() - 1);
+		m_vDiffVal.insert(m_vDiffVal.begin(), 0);
+	}
+
+        if (this->m_SPThrsSampleCnt <= 2)
+		this->m_SPThrsSampleCnt = 2;
+    else if(this->m_SPThrsSampleCnt >= DwellSampleCnt)
+		this->m_SPThrsSampleCnt = DwellSampleCnt;
+
+	double absDiffVal;
+	double absSumDiffVall;
+	double absAvgDiffVal; 
+	
+
+	if (m_vSamplesDBm.size() >= this->m_SPThrsSampleCnt) {
+		for(int i = 0;i < this->m_SPThrsSampleCnt - 1 ; i++) {
+			m_vDiffVal[i] = m_vSamplesDBm[i] - m_vSamplesDBm[i + 1];
+			absDiffVal = abs(m_vDiffVal[i]);
+
+            			absSumDiffVall = abs(accumulate(&m_vDiffVal[0], &m_vDiffVal[this->m_SPThrsSampleCnt],0.0 ));
+			absAvgDiffVal = abs( accumulate(&m_vDiffVal[0], &m_vDiffVal[this->m_SPThrsSampleCnt],0.0)/ this->m_SPThrsSampleCnt );
+
+
+			if ((absDiffVal > SP_dBm_Diff_Thrs) || (absSumDiffVall > SP_dBm_Diff_Thrs))
+				cal_SP_Flag = 0;
+			if (absDiffVal > SP_dBm_Diff_Thrs)
+				m_vSamplesDiff[i] = 1;
+			else
+				m_vSamplesDiff[i] = 0;
+		}
+		
+		if ( (m_SPAccum >= this->m_SPThrsSampleCnt * 2 - 1) && (cal_SP_Flag < 1) && accumulate(&m_vSamplesDiff[0], &m_vSamplesDiff[this->m_SPThrsSampleCnt], 0.0) <= 3) {
+			
+			vector<int> nonzeroIndex;
+			for (int i = 0;i < this->m_SPThrsSampleCnt;i++)
+				if (m_vSamplesDiff[i] != 0)
+					nonzeroIndex.push_back(i);
+
+			if(nonzeroIndex.empty())
+				cal_SP_Flag = 1;
+			else {
+				if (abs(nonzeroIndex.back() - nonzeroIndex.front()) <= 2)
+					cal_SP_Flag = 1;
+			}
+		
+		}
+	}
+
+
+}
