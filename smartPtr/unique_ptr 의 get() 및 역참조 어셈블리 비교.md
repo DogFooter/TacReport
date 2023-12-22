@@ -37,7 +37,7 @@ int main() {
 &nbsp;
 ## 역참조 부분 어셈블리 코드
 - myPtr.get() 에서 get() 대신 역참조 연산자 호출하는 부분이 다름
- - 그러나 MSVC 어셈블리 레벨에서, **get() 과 역참조 연산자(*)의 코드는 동일**하다 
+ - 그러나 MSVC 어셈블리 레벨에서, **get() 과 역참조 연산자(*)의 코드는 포인터 리턴이냐,포인터가 가리키는 값 리턴이냐의 차이**만 존재한다.
  ```asm
     12:     auto deref = *myPtr;
 00007FF7D2C92A00  lea         rcx,[myPtr]  
@@ -48,7 +48,7 @@ int main() {
  ```
 &nbsp;
 ### get() 함수의 어셈블리 코드
-
+- 포인터 리턴
 ```asm
   3250:     _NODISCARD pointer get() const noexcept {
 00007FF78EDA2300  mov         qword ptr [rsp+8],rcx  
@@ -65,7 +65,7 @@ int main() {
 ```
 &nbsp;
 ### 역참조 연산자의 어셈블리 코드
-
+-포인터가 가리키는 값 리턴
 ```asm
     _NODISCARD _CONSTEXPR23 add_lvalue_reference_t<_Ty> operator*() const noexcept(noexcept(*_STD declval<pointer>())) {
 00007FF7ADB04B40  mov         qword ptr [rsp+8],rcx  
